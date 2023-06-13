@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Models\" />
+    <None Remove="DTO\" />
+    <None Remove="Models\AccountModels\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Models\AccountModels\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CampinWebApi.Domain\CampinWebApi.Domain.csproj" />
+  </ItemGroup>
+</Project>
