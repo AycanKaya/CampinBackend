@@ -10,8 +10,8 @@ public class UpdateCampsiteDTO
     public string lat { get; set; }
     public string lng { get; set; }
     public int HolidayDestinationId { get; set; }
-    public DateTime SeasonStartDate { get; set; }
-    public DateTime SeasonCloseDate { get; set; }
+    public string SeasonStartDate { get; set; }
+    public string SeasonCloseDate { get; set; }
     public int Capacity { get; set; }
     public bool HasElectricity { get; set; }
     public bool HasWater { get; set; }

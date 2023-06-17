@@ -16,25 +16,6 @@ public class CommentService :ICommentService
         this.context = context;
         this.jwtService = jwtService;
     }
-
-    public async Task<List<Comments>> CreateComment(CreateCommentDTO createCommentDto, string userToken)
-    {
-        var userId = jwtService.GetUserIdFromJWT(userToken);
-        var user = await context.UserInfo.FirstOrDefaultAsync(u => u.UserID == userId);
-
-        var comment = new Comments
-          {
-            AuthorId = userId,
-            AuthorName = user.Name,
-            CampsiteId = createCommentDto.CampsiteID,
-            Content = createCommentDto.Content,
-            Created = DateTime.Now,
-            IsDeleted = false
-        };
-        await context.Comments.AddAsync(comment);
-        await context.SaveChangesAsync();
-        return await context.Comments.Where(c => c.CampsiteId == createCommentDto.CampsiteID).ToListAsync();
-    }
     
     // if user reserved campsite , user can comment on it and user can rate this campsite
     public async Task<bool> CreateCommentAndRate(UserCampFeedbackModel userCampFeedbackModel, string userToken)
@@ -120,6 +101,8 @@ public class CommentService :ICommentService
     {
         var userId = jwtService.GetUserIdFromJWT(userToken);
         var comment = await context.Comments.FirstOrDefaultAsync(c => c.Id == commentId);
+        if(comment == null)
+            throw new FileNotFoundException("Comment not found !!");
 
         if (comment.AuthorId != userId)
             throw new BadHttpRequestException("You are not the author of this comment !!");

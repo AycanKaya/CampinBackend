@@ -1,7 +1,9 @@
+using System.Globalization;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampinWebApi.Services;
@@ -65,6 +67,12 @@ public class CampsiteOwnerService : ICampsiteOwnerService
     
     public async Task<Campsite> UpdateCampsite(UpdateCampsiteDTO dto)
     {
+        DateTime startDate = DateTime.TryParseExact(dto.SeasonStartDate, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date) ? date : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
+        
+        DateTime endDate = DateTime.TryParseExact(dto.SeasonCloseDate, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var end) ? end : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
+        
         var campsite = await context.Campsites.FirstOrDefaultAsync(c => c.CampsiteId == dto.CampsiteId);
         if(campsite == null)
             throw new Exception($"Campsite with id {dto.CampsiteId} not found");
@@ -78,8 +86,8 @@ public class CampsiteOwnerService : ICampsiteOwnerService
         campsite.AdultPrice = dto.AdultPrice;
         campsite.ChildPrice = dto.ChildPrice;
         campsite.HolidayDestinationId = dto.HolidayDestinationId;
-        campsite.SeasonStartDate = dto.SeasonStartDate;
-        campsite.SeasonCloseDate = dto.SeasonCloseDate;
+        campsite.SeasonStartDate = startDate;
+        campsite.SeasonCloseDate = endDate;
         campsite.Capacity = dto.Capacity;
         campsite.lat = dto.lat;
         campsite.lng = dto.lng;
@@ -113,6 +121,4 @@ public class CampsiteOwnerService : ICampsiteOwnerService
         await context.SaveChangesAsync();
         return true;
     }
-
-
 }

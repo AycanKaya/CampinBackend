@@ -1,5 +1,6 @@
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.PaymentDTO;
+using Microsoft.AspNetCore.Http;
 
 namespace CampinWebApi.Services.CrediCardMock;
 
@@ -11,28 +12,31 @@ public class CrediCardService : ICrediCardService
     {
         this.creditCardMock = new CreditCard();
     }
-    
-    
     public bool ProcessPaymentAsync(PaymentDTO payment)
     {
         if (payment.CardNumber != this.creditCardMock.CardNumber)
         {
-            throw new ArgumentException("Invalid credit card number");
+            throw new BadHttpRequestException("Invalid credit card number");
         }
         
         if (payment.ExpirationDate != this.creditCardMock.ExpirationDate)
         {
-            throw new ArgumentException("Invalid credit card expiration date");
+            throw new BadHttpRequestException("Invalid credit card expiration date");
         }
         
         if (payment.SecurityCode != this.creditCardMock.SecurityCode)
         {
-            throw new ArgumentException("Invalid credit card security code");
+            throw new BadHttpRequestException("Invalid credit card security code");
         }
         
         if(payment.CardTotalPrice > this.creditCardMock.Amount)
         {
-            throw new ArgumentException("Insufficient funds");
+            throw new BadHttpRequestException("Insufficient funds");
+        }
+
+        if (payment.CardHolderName != this.creditCardMock.CardHolderName)
+        {
+            throw new BadHttpRequestException("Invalid credit card holder name");
         }
         
         creditCardMock.Amount -= payment.CardTotalPrice;

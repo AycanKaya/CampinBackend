@@ -10,6 +10,7 @@ builder.Services.AddSwaggerExtension();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
@@ -18,8 +19,8 @@ builder.Services.AddCors(options =>
             builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
         });
 });
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
 builder.Services.AddAuthorization();
 builder.Services.ConfigureSameSiteNoneCookies();
 
@@ -33,10 +34,16 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "OnionArchitecture");
+                
+});
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseCors();

@@ -16,7 +16,6 @@ namespace CampinWebApi.Core.DTO
         [Required(ErrorMessage = "PhoneName  is required")] 
         public string? PhoneNumber { get; set; }
         
-        [EmailAddress]
         [Required(ErrorMessage = "Email is required")]
         public string? Email { get; set; }
 

@@ -45,6 +45,7 @@ public class RezervationService : IRezervationService
             ExpirationDate = makeRezervationDto.ExpirationDate,
             SecurityCode = makeRezervationDto.SecurityCode,
             CardTotalPrice = makeRezervationDto.CardTotalPrice,
+            CardHolderName = makeRezervationDto.CardHolderName
         };
         
         var isPaymentSuccess = this.crediCardService.ProcessPaymentAsync(payment);
@@ -69,8 +70,7 @@ public class RezervationService : IRezervationService
         }
         return false;
     }
-    
-    
+
 /*
     public async Task<int> AddCustomerInfo(CreateCardDTO cardDto, string userToken)
     {
@@ -136,10 +136,4 @@ public class RezervationService : IRezervationService
         }
         return getUserReservedModels;
     }
-
-
-    
-
-
-
 }

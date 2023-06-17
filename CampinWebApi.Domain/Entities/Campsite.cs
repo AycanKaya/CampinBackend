@@ -10,8 +10,10 @@ namespace CampinWebApi.Domain.Entities
         public string Name { get; set; }
         public string Description { get; set; }
         public float Rate { get; set; }
-        public int AdultPrice { get; set; }
-        public int ChildPrice { get; set; }
+        
+        // convert float 
+        public float AdultPrice { get; set; }
+        public float ChildPrice { get; set; }
         public DateTime SeasonStartDate { get; set; }
         public DateTime SeasonCloseDate { get; set; }
         public string lat { get; set; }

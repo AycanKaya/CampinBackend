@@ -10,6 +10,7 @@ public class MakeRezervationDTO
     
     public float TotalPrice { get; set; }
     public string CardNumber { get; set; }
+    public string CardHolderName { get; set; }
     public string ExpirationDate { get; set; }
     public int SecurityCode { get; set; }
     public float CardTotalPrice { get; set; }

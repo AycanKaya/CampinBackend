@@ -8,5 +8,12 @@
       <jdbc-url>Server=localhost,1433;Database=tempdb</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="campindatabase@campin.database.windows.net" uuid="c2f610f5-d464-45bd-9b95-25eeca0efcc5">
+      <driver-ref>azure.ms</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</jdbc-driver>
+      <jdbc-url>jdbc:sqlserver://campin.database.windows.net:1433;database=campindatabase</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
