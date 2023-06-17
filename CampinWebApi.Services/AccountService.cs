@@ -9,17 +9,12 @@ using CampinWebApi.Core.DTO.UserDTO;
 using CampinWebApi.Core.Models;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampinWebApi.Services
 {
-    
-    // Kamp sahipleri için role ekleme yap.
-    
-    //  TODO : Fake admin servisi 
-
-   // Şifremi unuttum 
-   
     public class AccountService : IAccountService
 	{
         private readonly UserManager<IdentityUser> userManager;
@@ -39,7 +34,7 @@ namespace CampinWebApi.Services
         {
             var exist_user = await userManager.FindByEmailAsync(registerRequest.Email);
             if (exist_user != null)
-                throw new Exception($"Username '{registerRequest.Name}' is already taken.");
+                throw new BadHttpRequestException($"Username '{registerRequest.Email}' is already taken.");
             
             if (isValidEmail(registerRequest.Email) && isValidatePassword(registerRequest.Password))
             {
@@ -47,7 +42,7 @@ namespace CampinWebApi.Services
                 {
                     Email = registerRequest.Email,
                     SecurityStamp = Guid.NewGuid().ToString(),
-                    UserName = registerRequest.Name,
+                    UserName = registerRequest.Name + Guid.NewGuid(),
                 };
                 var result = await userManager.CreateAsync(user, registerRequest.Password);
 
@@ -74,7 +69,7 @@ namespace CampinWebApi.Services
                 return true;
             }
             else
-                throw new ExceptionResponse("Invalid email or passwprd !");
+                throw new BadHttpRequestException("Invalid email or password! Your password must contain uppercase and lowercase letters and at least one punctuation mark.");
         }
         
         // Add role to user
@@ -84,7 +79,7 @@ namespace CampinWebApi.Services
             var user = await userManager.FindByIdAsync(userId);
             
             if (user == null)
-                throw new Exception($"User not be found");
+                throw new FileNotFoundException($"User not be found");
             
             await userManager.AddToRoleAsync(user, role);
             return true;
@@ -99,20 +94,21 @@ namespace CampinWebApi.Services
             var result = await signInManager.PasswordSignInAsync(user.UserName, authenticationRequest.Password, false, lockoutOnFailure: false);
             if (!result.Succeeded)
             {
-                throw new Exception($"Invalid Credentials for '{authenticationRequest.Email}'.");
+                throw new BadHttpRequestException($"Invalid Credentials for '{authenticationRequest.Email}'.");
             }
 
             var userClaims = await userManager.GetClaimsAsync(user);
             var roles = await userManager.GetRolesAsync(user);
 
             JwtSecurityToken token = jwtService.GetToken(userClaims, roles, user);
-
+            var userInfo= await context.UserInfo.Where(x => x.UserID == user.Id).FirstOrDefaultAsync();
 
             AuthenticationResponseDTO dto = new AuthenticationResponseDTO();
             dto.Id = user.Id;
             dto.JWToken = new JwtSecurityTokenHandler().WriteToken(token);
             dto.Email = user.Email;
-            dto.UserName = user.UserName;
+            dto.Name = userInfo.Name;
+            dto.Surname = userInfo.Surname;
             var rolesList = await userManager.GetRolesAsync(user).ConfigureAwait(false);
             dto.Roles = rolesList.ToList();
             dto.IsVerified = user.EmailConfirmed;
@@ -150,14 +146,14 @@ namespace CampinWebApi.Services
         public async Task<bool> ResetPassword(ResetPasswordDTO resetPassword)
         {
             var account = await userManager.FindByEmailAsync(resetPassword.Email);
-            if (account == null) throw new Exception($"No Accounts Registered with {resetPassword.Email}.");
+            if (account == null) throw new FileNotFoundException("User not be found, please check your email address.");
             
             if (resetPassword.Password != resetPassword.ConfirmPassword)
-                throw new Exception("Passwords not match ! ");
+                throw new BadHttpRequestException("Passwords not match ! ");
 
             var result = await userManager.ChangePasswordAsync(account, resetPassword.OldPassword, resetPassword.Password);
             if (!result.Succeeded)
-                throw new Exception("Old password not match!");
+                throw new BadHttpRequestException("Old password not match!");
             return true;
 
         }
