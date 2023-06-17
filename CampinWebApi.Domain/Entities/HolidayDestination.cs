@@ -8,4 +8,6 @@ public class HolidayDestination
         public int CityId { get; set; }
         public string HolidayDestinationName { get; set; }
         public string Information { get; set; }
+        
+        public virtual City City { get; set; }
 }

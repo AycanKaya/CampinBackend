@@ -7,9 +7,8 @@ namespace CampinWebApi.Contracts;
 public interface ICampsiteService
 {
     Task<CampsitesResponseModel> GetCampsiteById(string id);
-    Task<Campsite> GetCampsiteByName(string name);
-    Task<List<Campsite>> GetAllCampsite();
-    Task<double> RatingCampsite(RatingCampsiteDTO ratingDto, string userToken);
-    Task<List<Campsite>> GetPopulerCampsites();
-    Task<List<Campsite>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end);
+    Task<List<GetAllCampsitesResponseModel>> GetCampsitesByCity(string city);
+    Task<List<GetAllCampsitesResponseModel>> GetAllCampsites();
+    Task<List<GetAllCampsitesResponseModel>> GetPopulerCampsites();
+    Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end);
 }

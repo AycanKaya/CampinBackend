@@ -10,6 +10,8 @@ namespace CampinWebApi.Domain.Entities
 		public string AuthorName { get; set; }
 		public DateTime Created { get; set; }
 		public bool IsDeleted { get; set; }
+		
+		public virtual UserInfo Author { get; set; }
     }
 }
 

@@ -20,5 +20,8 @@ namespace CampinWebApi.Domain.Entities
         public string lng { get; set; }
         public int Capacity { get; set; }
         public bool isEnable { get; set; }
+        
+        public virtual HolidayDestination HolidayDestination { get; set; }
+        public virtual Features Feature { get; set; }
     }
 }

@@ -72,7 +72,6 @@ public class CommentService :ICommentService
     public async Task<bool> UpdateCommentAndRate(UpdateUserFeedbackDTO updateUserFeedback, string userToken)
     {
         var userId = jwtService.GetUserIdFromJWT(userToken);
-        var user = await context.UserInfo.FirstOrDefaultAsync(u => u.UserID == userId);
         
         if (!CheckUserRezervedCampsite(userId, updateUserFeedback.CampsiteId).Result)
             throw new BadHttpRequestException("You can not comment and rate on this campsite because you did not reserve it !!");

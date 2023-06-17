@@ -48,22 +48,14 @@ public class CampsiteController :ControllerBase
             return new InternalServerErrorResult();
         }
     }
-    
-    [HttpGet("GetCampsiteByName")]
-    public async Task<BaseResponseModel<Campsite>> GetCampsiteByName(string name)
-    {
-        var campsite = await campsiteService.GetCampsiteByName(name);
-        var result = new BaseResponseModel<Campsite>(campsite, "Campsite found");
-        return result;
-    }
-    
+
     [HttpGet("GetCampsites")]
     public async Task<IActionResult> GetCampsites()
     {
         try
         {
-            var campsiteList = await campsiteService.GetAllCampsite();
-            var result = new BaseResponseModel<List<Campsite>>(campsiteList, "Campsites found");
+            var campsiteList = await campsiteService.GetAllCampsites();
+            var result = new BaseResponseModel<List<GetAllCampsitesResponseModel>>(campsiteList, "Campsites found");
             return new  OkObjectResult(result);
         }
         catch (UnauthorizedAccessException exception)
@@ -83,7 +75,7 @@ public class CampsiteController :ControllerBase
         try
         {
             var campsiteList = await campsiteService.GetAvailableCampsites(city, holidayDestination, startDate, endDate);
-            var result = new BaseResponseModel<List<Campsite>>(campsiteList, "Campsites found");
+            var result = new BaseResponseModel<List<GetAllCampsitesResponseModel>>(campsiteList, "Campsites found");
             return new OkObjectResult(result);
         }
         catch (ValidationException exception)
@@ -117,8 +109,37 @@ public class CampsiteController :ControllerBase
         try
         {
             var campsiteList = await campsiteService.GetPopulerCampsites();
-            var result = new BaseResponseModel<List<Campsite>>(campsiteList, "Campsites found");
+            var result = new BaseResponseModel<List<GetAllCampsitesResponseModel>>(campsiteList, "Campsites found");
             return new OkObjectResult(result);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
+    }
+    
+    [HttpGet("GetCampsitesByCity")]
+    public async Task<IActionResult> GetCampsiteByName(string cityName)
+    {
+        try
+        {
+            var campsite = await campsiteService.GetCampsitesByCity(cityName);
+            var result = new BaseResponseModel<List<GetAllCampsitesResponseModel>>(campsite, "Campsite found");
+            return new OkObjectResult(result);
+        }
+        catch (FileNotFoundException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
         }
         catch (Exception)
         {

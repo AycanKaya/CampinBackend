@@ -34,7 +34,7 @@ namespace CampinWebApi.Services
         {
             var exist_user = await userManager.FindByEmailAsync(registerRequest.Email);
             if (exist_user != null)
-                throw new BadHttpRequestException($"Username '{registerRequest.Email}' is already taken.");
+                throw new BadHttpRequestException($" This email :  '{registerRequest.Email}' is already taken.");
             
             if (isValidEmail(registerRequest.Email) && isValidatePassword(registerRequest.Password))
             {
@@ -155,8 +155,8 @@ namespace CampinWebApi.Services
             if (!result.Succeeded)
                 throw new BadHttpRequestException("Old password not match!");
             return true;
-
         }
+        
         private UserInfo SetUserInfo(UserInfoDTO dto, UserInfo userInfo, string token, string userId)
         {
             userInfo.UserID = userId;

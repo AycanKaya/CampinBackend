@@ -70,41 +70,7 @@ public class RezervationService : IRezervationService
         }
         return false;
     }
-
-/*
-    public async Task<int> AddCustomerInfo(CreateCardDTO cardDto, string userToken)
-    {
-        var userId = jwtService.GetUserIdFromJWT(userToken);
-        var card = await this.cardService.AddToCardAsync(cardDto, userId);
-        return card.Id;
-    }
     
-    public async Task<bool> ProcessPaymentAsync(PaymentDTO payment, int cardId)
-    {
-        var isPaymentSuccess = this.crediCardService.ProcessPaymentAsync(payment);
-        if (isPaymentSuccess)
-        {
-          var card = await this.cardService.GetCard(cardId);
-          card.isPaid = true;
-          
-          var rezervation = new Rezervations()
-            {
-                CampsiteId = card.CampsiteId,
-                CustomerId = card.UserInfoID,
-                StartDate = card.StartDate,
-                EndDate = card.EndDate,
-                NumOfAdult = card.NumOfAdult,
-                NumOfChilder = card.NumOfChilder,
-                isPaid = card.isPaid,
-                isEnable = card.isEnable
-            };
-            this.context.Rezervations.Add(rezervation);
-            await this.context.SaveChangesAsync();
-            return true;
-        }
-        return false;
-    }
-    */ 
     public async Task<List<GetUserReservedModel>> GetUserRezervedCampsite(string userToken)
     {
         var userId = jwtService.GetUserIdFromJWT(userToken);

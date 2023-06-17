@@ -1,8 +1,12 @@
+using System.Globalization;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Core.Models.CampsiteModels;
+using CampinWebApi.Core.Models.CommentModels;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampinWebApi.Services;
@@ -17,19 +21,19 @@ public class CampsiteService :ICampsiteService
         this.context = context;
         this.jwtService = jwtService;
     }
-    public async Task<List<Campsite>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end)
+    public async Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end)
     {
-        var startDate = DateTime.Parse(start);
-        var endDate = DateTime.Parse(end);
+        DateTime startDate = DateTime.TryParseExact(start, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date) ? date : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
+        
+        DateTime endDate = DateTime.TryParseExact(end, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var enddate) ? enddate : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
         
         int holidayDestinationId = await context.HolidayDestinations
             .Join(context.Cities , hd => hd.CityId , c => c.Id , (hd , c) => new {HolidayDestination = hd , City = c})
             .Where(hd => hd.HolidayDestination.HolidayDestinationName == holidayDestinationName && hd.City.CityName == cityName)
             .Select(hd => hd.HolidayDestination.Id)
             .FirstOrDefaultAsync();
-
-        if (holidayDestinationId == 0)
-            return new List<Campsite>();
 
         var reservedCampsites = await context.Rezervations
             .Where(r => r.StartDate <= endDate && r.EndDate >= startDate)
@@ -38,50 +42,24 @@ public class CampsiteService :ICampsiteService
         
         var availableCampsites = await context.Campsites
             .Where(c => c.SeasonStartDate <= startDate && c.SeasonCloseDate >= endDate &&  c.HolidayDestinationId == holidayDestinationId && !reservedCampsites.Contains(c.CampsiteId))
+            .Include(c => c.HolidayDestination)
+            .ThenInclude(hd => hd.City)
             .ToListAsync();
-       
-        return availableCampsites;
-    }
-    public async Task<Campsite> CreateCampsite(CreateCampsiteRequestDTO request, string userToken)
-    {
-        var ownerID =  jwtService.GetUserIdFromJWT(userToken);
-        var feature = new Features
-        {
-            HasElectricity = request.HasElectricity,
-            HasWater = request.HasWater,
-            HasToilet = request.HasToilet,
-            HasShower = request.HasShower,
-            HasWiFi = request.HasWiFi,
-            HasTrees = request.HasTrees,
-            HasParking = request.HasParking,
-            HasSecurity = request.HasSecurity,
-            HasBusinessServices = request.HasBusinessServices,
-            HasActivities = request.HasActivities,
-            HasFirePit = request.HasFirePit,
-            HasSignal = request.HasSignal,
-            IsNearSea = request.IsNearSea
-        };
         
-        context.Features.Add(feature);
-        
-        var campsite = new Campsite
+        var campsiteResponseList = availableCampsites.Select(c => new GetAllCampsitesResponseModel
         {
-            CampsiteId = Guid.NewGuid().ToString(),
-            Name = request.Name,
-            OwnerID = ownerID,
-            HolidayDestinationId = request.HolidayDestinationId,
-            Description = request.Description,
-            AdultPrice = request.AdultPrice,
-            ChildPrice = request.ChildPrice,
-            Capacity = request.Capacity,
-            SeasonStartDate = request.SeasonStartDate,
-            SeasonCloseDate = request.SeasonCloseDate,
-            FeatureId = feature.Id,
-            isEnable = true
-        };
-        context.Campsites.Add(campsite);
-        await context.SaveChangesAsync();
-        return campsite;
+            CampsiteId = c.CampsiteId,
+            HolidayDestinationName = c.HolidayDestination.HolidayDestinationName,
+            CityName = c.HolidayDestination.City.CityName,
+            Name = c.Name,
+            Description = c.Description,
+            Rate = c.Rate,
+            AdultPrice = c.AdultPrice,
+            ChildPrice = c.ChildPrice,
+            Capacity = c.Capacity
+        }).ToList();
+        
+        return campsiteResponseList;
     }
     public async Task<double> RatingCampsite(RatingCampsiteDTO ratingDto,string userToken)
     {
@@ -133,45 +111,121 @@ public class CampsiteService :ICampsiteService
             OwnerEmail = owner.Email,
             OwnerName = owner.Name,
             OwnerSurname = owner.Surname,
-            OwnerPhoneNumber = owner.PhoneNumber
+            OwnerPhoneNumber = owner.PhoneNumber,
+            Rate = campsite.Rate,
+            lng = campsite.lng,
+            lat = campsite.lat,
         };
 
         if (campsite == null)
             throw new FileNotFoundException($"Campsite with id {id} not found");
 
-        var commentList= await context.Comments.Where(x => x.CampsiteId == id).ToArrayAsync();
+        var commentList = await context.Comments.
+            Include(x => x.Author)
+            .Where(x => x.CampsiteId == id).ToArrayAsync();
+
+        var commentResponseModelList = new List<GetCommentModel>();
+        foreach (var comment in commentList)
+        {
+            var rate = await context.Ratings.FirstOrDefaultAsync(c => c.CampsiteId == id && c.UserId == comment.AuthorId);
+            var response = new GetCommentModel
+            {
+                Content = comment.Content,
+                AuthorName = comment.AuthorName,
+                AuthorSurname = comment.Author.Surname,
+                UserRate = rate.Rate,
+                Created = comment.Created.Date
+            };
+            commentResponseModelList.Add(response);
+        }
         var featureList = await context.Features.Where(x => x.Id == campsite.FeatureId).FirstOrDefaultAsync();
         var imageUrls = await context.CampsiteImages.Where(x => x.CampsiteId == id).Select(x => x.ImageUrl).ToArrayAsync();
         
         var campsiteResponse = new CampsitesResponseModel
         {
             Campsite = campsiteModel,
-            Comments = commentList,
+            Comments = commentResponseModelList.ToArray(),
             ImageUrls = imageUrls,
             Features = featureList
         };
         return campsiteResponse;
     }
-    public async Task<Campsite> GetCampsiteByName(string name)
-    {
-        var campsite = await context.Campsites.FirstOrDefaultAsync(c => c.Name == name);
-        
-        if (campsite == null)
-            throw new Exception($"Campsite with id {name} not found");
-        
-        return campsite;
-    }
-    public async Task<List<Campsite>> GetAllCampsite()
-    {
-        return await context.Campsites.ToListAsync();
-    }
-    public async Task<List<Campsite>> GetPopulerCampsites() 
-    {
-      var campsites = await context.Campsites.ToListAsync();
 
-      return campsites
+    public async Task<List<GetAllCampsitesResponseModel>> GetAllCampsites()
+    {
+        var campsites = await context.Campsites
+            .Include(c => c.HolidayDestination)
+            .ThenInclude(hd => hd.City)
+            .ToListAsync();
+
+        var campsiteResponseList = campsites.Select(c => new GetAllCampsitesResponseModel
+        {
+            CampsiteId = c.CampsiteId,
+            HolidayDestinationName = c.HolidayDestination.HolidayDestinationName,
+            CityName = c.HolidayDestination.City.CityName,
+            Name = c.Name,
+            Description = c.Description,
+            Rate = c.Rate,
+            AdultPrice = c.AdultPrice,
+            ChildPrice = c.ChildPrice,
+            Capacity = c.Capacity
+        }).ToList();
+
+        return campsiteResponseList;
+    }
+
+    public async Task<List<GetAllCampsitesResponseModel>> GetPopulerCampsites() 
+    {
+      var campsites = await context.Campsites
+          .Include(c => c.HolidayDestination)
+          .ThenInclude(hd => hd.City)
+          .ToListAsync();
+
+      var campsiteResponseList = campsites.Select(c => new GetAllCampsitesResponseModel
+      {
+          CampsiteId = c.CampsiteId,
+          HolidayDestinationName = c.HolidayDestination.HolidayDestinationName,
+          CityName = c.HolidayDestination.City.CityName,
+          Name = c.Name,
+          Description = c.Description,
+          Rate = c.Rate,
+          AdultPrice = c.AdultPrice,
+          ChildPrice = c.ChildPrice,
+          Capacity = c.Capacity
+      }).ToList();
+
+      return campsiteResponseList
           .OrderByDescending(c => c.Rate)
           .Take(10)
           .ToList(); 
     }
+     
+    // method that returns all campsites according to city
+    public async Task<List<GetAllCampsitesResponseModel>> GetCampsitesByCity(string city)
+    {
+        var campsites = await context.Campsites
+            .Include(c => c.HolidayDestination)
+            .ThenInclude(hd => hd.City)
+            .ToListAsync();
+        
+        var filteredCampsites = campsites
+            .Where(c => string.Equals(c.HolidayDestination.City.CityName, city, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var campsiteResponseList = filteredCampsites.Select(c => new GetAllCampsitesResponseModel
+        {
+            CampsiteId = c.CampsiteId,
+            HolidayDestinationName = c.HolidayDestination.HolidayDestinationName,
+            CityName = c.HolidayDestination.City.CityName,
+            Name = c.Name,
+            Description = c.Description,
+            Rate = c.Rate,
+            AdultPrice = c.AdultPrice,
+            ChildPrice = c.ChildPrice,
+            Capacity = c.Capacity
+        }).ToList();
+        
+        return campsiteResponseList;
+    }
+    
 }
