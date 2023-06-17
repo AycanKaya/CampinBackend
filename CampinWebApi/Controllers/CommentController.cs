@@ -1,14 +1,15 @@
+using System.ComponentModel.DataAnnotations;
 using System.Net;
+using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CommentDTO;
 using CampinWebApi.Core.Models;
-using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CampinWebApi.Controllers;
 
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class CommentController : ControllerBase
@@ -21,33 +22,109 @@ public class CommentController : ControllerBase
     }
     
     [HttpDelete("DeleteComment")]
-    public async Task<BaseResponseModel<bool>> DeleteComment(int commentID)
+    public async Task<IActionResult> DeleteComment(int commentID)
     {
-        var token = HttpContext.Request.Headers.Authorization.ToString();
-        var isDeleted = await commentService.DeleteComment(commentID, token);
-        
-        if (isDeleted)
-            return new BaseResponseModel<bool>(isDeleted,"Comment deleted successfully.");
-        
-        return new BaseResponseModel<bool>(isDeleted,"Comment not found.");
+        try
+        {
+            var token = HttpContext.Request.Headers.Authorization.ToString();
+            var isDeleted = await commentService.DeleteComment(commentID, token);
+            var resp = new BaseResponseModel<bool>(isDeleted,"Comment deleted successfully.");
+            return new OkObjectResult(resp);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch (FileNotFoundException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
 
     [HttpPost("ShareComment")]
-    public async Task<BaseResponseModel<bool>> ShareComment(UserCampFeedbackModel feedback)
+    public async Task<IActionResult> ShareComment(UserCampFeedbackModel feedback)
     {
-        var token = HttpContext.Request.Headers.Authorization.ToString();
-        await commentService.CreateCommentAndRate(feedback, token);
-        
-        return new BaseResponseModel<bool>(true, "Comment created successfully.");
+        try
+        {
+            var token = HttpContext.Request.Headers.Authorization.ToString();
+            await commentService.CreateCommentAndRate(feedback, token);
+            var resp = new BaseResponseModel<bool>(true,"Comment created successfully.");
+            return new OkObjectResult(resp);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch (FileNotFoundException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
     
     [HttpPost("UpdateCommentAndRate")]
-    public async Task<BaseResponseModel<bool>> UpdateCommentAndRate(UpdateUserFeedbackDTO feedback)
+    public async Task<IActionResult> UpdateCommentAndRate(UpdateUserFeedbackDTO feedback)
     {
-        var token = HttpContext.Request.Headers.Authorization.ToString();
-        await commentService.UpdateCommentAndRate(feedback, token);
+        try
+        {
+            var token = HttpContext.Request.Headers.Authorization.ToString();
+            await commentService.UpdateCommentAndRate(feedback, token);
         
-        return new BaseResponseModel<bool>(true, "Comment updated successfully.");
+            var baseResponseModel = new BaseResponseModel<bool>(true, "Comment updated successfully.");
+            return new OkObjectResult(baseResponseModel);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch (FileNotFoundException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
     
 }

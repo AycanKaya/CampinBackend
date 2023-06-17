@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Core.Models;
@@ -8,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CampinWebApi.Controllers;
 
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class FavoriteCampsiteController : ControllerBase
@@ -21,49 +23,57 @@ public class FavoriteCampsiteController : ControllerBase
     }
     
     [HttpPost("AddFavoriteCampsite")]
-    public async Task<BaseResponseModel<bool>> AddFavoriteCampsite(string campsiteId)
+    public async Task<IActionResult> AddFavoriteCampsite(string campsiteId)
     {
         try
         {
             var userToken = HttpContext.Request.Headers.Authorization.ToString();
             var addeFavorites = await favoriteCampsitesService.AddCampsiteToFavorites(userToken, campsiteId);
             var result = new BaseResponseModel<bool>(addeFavorites, "Added favorites." );
-            return result;
-        }
-        catch (UnauthorizedAccessException exception)
-        {
-            throw new UnauthorizedAccessException(exception.Message);
+            return new OkObjectResult(result);
         }
         catch (ValidationException exception)
         {
-            throw new  ValidationException(exception.Message);
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
         }
-        catch (Exception exception)
+        catch (FileNotFoundException exception)
         {
-            throw new Exception(exception.Message);
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
         }
     }
+    
     [HttpGet("GetFavoriteCampsites")]
-    public async Task<BaseResponseModel<List<Campsite>>> GetFavoriteCampsites()
+    public async Task<IActionResult> GetFavoriteCampsites()
     {
         try
         {
             var userToken = HttpContext.Request.Headers.Authorization.ToString();
             var favoriteCampsites = await favoriteCampsitesService.GetFavoriteCampsites(userToken);
             var result = new BaseResponseModel<List<Campsite>>(favoriteCampsites, "Get favorite campsites.");
-            return result;
+            return new OkObjectResult(result);
         }
         catch (UnauthorizedAccessException exception)
         {
-            throw new UnauthorizedAccessException(exception.Message);
-        }
-        catch (ValidationException exception)
-        {
-            throw new  ValidationException(exception.Message);
+            return new UnauthorizedObjectResult(exception.Message);
         }
         catch (Exception exception)
         {
-            throw new Exception(exception.Message);
+            return new InternalServerErrorResult();
         }
     }
    

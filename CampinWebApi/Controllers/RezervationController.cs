@@ -1,13 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CardDTO;
 using CampinWebApi.Core.DTO.PaymentDTO;
 using CampinWebApi.Core.DTO.RezervationDTO;
+using CampinWebApi.Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CampinWebApi.Controllers;
 
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class RezervationController :ControllerBase
@@ -22,17 +26,49 @@ public class RezervationController :ControllerBase
     [HttpPost("MakeRezervation")]
     public async Task<IActionResult> AddCustomerInfo(MakeRezervationDTO dto)
     {
-        var userToken = HttpContext.Request.Headers.Authorization.ToString();
-        var isRezervationSuccess = await this.rezervationService.MakeRezervations(dto, userToken);
-        return Ok(isRezervationSuccess);
+        try
+        {
+            var userToken = HttpContext.Request.Headers.Authorization.ToString();
+            var isRezervationSuccess = await this.rezervationService.MakeRezervations(dto, userToken);
+            return Ok(isRezervationSuccess);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
     
     
     [HttpGet("GetUserRezervedCampsite")]
     public async Task<IActionResult> GetUserRezervedCampsite()
     {
-        var userToken = HttpContext.Request.Headers.Authorization.ToString();
-        var campsite = await this.rezervationService.GetUserRezervedCampsite(userToken);
-        return Ok(campsite);
+        try
+        {
+            var userToken = HttpContext.Request.Headers.Authorization.ToString();
+            var campsite = await this.rezervationService.GetUserRezervedCampsite(userToken);
+            return Ok(campsite);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
 }   

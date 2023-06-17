@@ -15,7 +15,6 @@ namespace CampinWebApi.Domain
         public  DbSet<Campsite> Campsites { get; set; }
         public  DbSet<Rezervations> Rezervations { get; set; }
         public  DbSet<HolidayDestination> HolidayDestinations { get; set; }
-        
         public DbSet<City> Cities { get; set; }
         public  DbSet<Comments> Comments { get; set; }
         public DbSet<Rating> Ratings { get; set; }

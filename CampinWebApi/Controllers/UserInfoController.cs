@@ -1,6 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CityDTO;
 using CampinWebApi.Core.DTO.UserDTO;
+using CampinWebApi.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CampinWebApi.Controllers;
@@ -8,6 +13,8 @@ namespace CampinWebApi.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
+
 public class UserInfoController : ControllerBase
 {
     private  IUserInfoService userInfoService;
@@ -20,9 +27,27 @@ public class UserInfoController : ControllerBase
     [HttpGet("GetUserInfo")]
     public async Task<IActionResult> Get()
     {
-        var token = HttpContext.Request.Headers.Authorization.ToString();
-        var cities = await userInfoService.GetUserInfo(token);
-        return Ok(cities);
+        try
+        {
+            var token = HttpContext.Request.Headers.Authorization.ToString();
+            var cities = await userInfoService.GetUserInfo(token);
+            return Ok(cities);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Please log in" , (int)HttpStatusCode.Unauthorized);
+            return new UnauthorizedObjectResult(response);        
+        }
+        
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
 
     [HttpPost("EditUserInfo")]
@@ -34,12 +59,25 @@ public class UserInfoController : ControllerBase
             var newCity = await userInfoService.EditUserInfo(dto, token);
             return Ok(newCity);
         }
-        catch (Exception e)
+        catch (ValidationException exception)
         {
-            Console.WriteLine(e);
-            throw e;
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
         }
-   
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"You are not authorized!" , (int)HttpStatusCode.Unauthorized);
+            return new UnauthorizedObjectResult(response);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
     }
     
 }
