@@ -12,9 +12,11 @@
     <None Remove="Models\AccountModels\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Models\AccountModels\" />
+    <ProjectReference Include="..\CampinWebApi.Domain\CampinWebApi.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CampinWebApi.Domain\CampinWebApi.Domain.csproj" />
+    <Reference Include="Microsoft.AspNetCore.Http.Features">
+      <HintPath>..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\6.0.16\Microsoft.AspNetCore.Http.Features.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -11,4 +11,8 @@
     <ProjectReference Include="..\CampinWebApi.Core\CampinWebApi.Core.csproj" />
     <ProjectReference Include="..\CampinWebApi.Domain\CampinWebApi.Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.17.0-beta.1" />
+  </ItemGroup>
 </Project>
