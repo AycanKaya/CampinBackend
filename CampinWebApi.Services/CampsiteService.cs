@@ -21,7 +21,7 @@ public class CampsiteService :ICampsiteService
         this.context = context;
         this.jwtService = jwtService;
     }
-    public async Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end)
+     public async Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end)
     {
         DateTime startDate = DateTime.TryParseExact(start, "yyyy/MM/dd", CultureInfo.InvariantCulture,
             DateTimeStyles.None, out var date) ? date : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
@@ -61,33 +61,100 @@ public class CampsiteService :ICampsiteService
         
         return campsiteResponseList;
     }
-    public async Task<double> RatingCampsite(RatingCampsiteDTO ratingDto,string userToken)
-    {
-        var userID =  jwtService.GetUserIdFromJWT(userToken);
 
-        var campsite = await context.Campsites.FirstOrDefaultAsync(c => c.CampsiteId == ratingDto.CampsiteId);
-        if (campsite == null)
-            throw new FileNotFoundException($"Campsite with id {ratingDto.CampsiteId} not found");
+     public async Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string start, string end)
+     {
+         if(cityName == null && start == null && end == null)
+             return await GetAllCampsites();
+         
+         if(cityName != null && start == null && end == null)
+             return await GetCampsitesByCity(cityName);
+            
+         if(cityName != null && start != null && end != null)
+             return await GetAvailableCampsitesByAllParameters(cityName, start, end);
+         
+         if(cityName == null && start != null && end != null)
+                return await GetAvailableCampsiteByDate(start, end);
+         
+         throw new BadHttpRequestException("Invalid parameters");
+     }
+     
+     private async Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsitesByAllParameters(string cityName,  string start, string end)
+    {
+        DateTime startDate = DateTime.TryParseExact(start, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date) ? date : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
         
-        var Rating = new Rating
+        DateTime endDate = DateTime.TryParseExact(end, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var enddate) ? enddate : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
+        
+        var holidayDestinationIds = await context.HolidayDestinations
+            .Join(context.Cities , hd => hd.CityId , c => c.Id , (hd , c) => new {HolidayDestination = hd , City = c})
+            .Where(hd => hd.HolidayDestination.CityId == hd.City.Id && hd.City.CityName == cityName)
+            .Select(hd => hd.HolidayDestination.Id)
+            .ToListAsync();
+
+        var reservedCampsites = await context.Rezervations
+            .Where(r => r.StartDate <= endDate && r.EndDate >= startDate)
+            .Select(r => r.CampsiteId)
+            .ToListAsync();
+        
+        var availableCampsites = await context.Campsites
+            .Where(c => c.SeasonStartDate <= startDate && c.SeasonCloseDate >= endDate &&  holidayDestinationIds.Contains(c.HolidayDestinationId) && !reservedCampsites.Contains(c.CampsiteId))
+            .Include(c => c.HolidayDestination)
+            .ThenInclude(hd => hd.City)
+            .ToListAsync();
+        
+        var campsiteResponseList = availableCampsites.Select(c => new GetAllCampsitesResponseModel
         {
-            RatingId = Guid.NewGuid().ToString(),
-            CampsiteId = ratingDto.CampsiteId,
-            UserId = userID,
-            Rate = ratingDto.Rating
-        };        
-        var ratingsForThis = await context.Ratings.Where(r => r.CampsiteId == ratingDto.CampsiteId).ToListAsync();
-        var sum = 0.0;
-        foreach (var rating in ratingsForThis)
-        {
-            sum += rating.Rate;
-        }
-        campsite.Rate = (float)(sum / ratingsForThis.Count);
-        context.Ratings.Add(Rating);
-        context.SaveChangesAsync();
-        return campsite.Rate;
+            CampsiteId = c.CampsiteId,
+            HolidayDestinationName = c.HolidayDestination.HolidayDestinationName,
+            CityName = c.HolidayDestination.City.CityName,
+            Name = c.Name,
+            Description = c.Description,
+            Rate = c.Rate,
+            AdultPrice = c.AdultPrice,
+            ChildPrice = c.ChildPrice,
+            Capacity = c.Capacity
+        }).ToList();
+        
+        return campsiteResponseList;
     }
-    public async Task<CampsitesResponseModel> GetCampsiteById(string id)
+
+     private async Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsiteByDate(string start, string end)
+     {
+         DateTime startDate = DateTime.TryParseExact(start, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+             DateTimeStyles.None, out var date) ? date : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
+        
+         DateTime endDate = DateTime.TryParseExact(end, "yyyy/MM/dd", CultureInfo.InvariantCulture,
+             DateTimeStyles.None, out var enddate) ? enddate : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
+
+         var reservedCampsites = await context.Rezervations
+             .Where(r => r.StartDate <= endDate && r.EndDate >= startDate)
+             .Select(r => r.CampsiteId)
+             .ToListAsync();
+        
+         var availableCampsites = await context.Campsites
+             .Where(c => c.SeasonStartDate <= startDate && c.SeasonCloseDate >= endDate &&  !reservedCampsites.Contains(c.CampsiteId))
+             .Include(c => c.HolidayDestination)
+             .ThenInclude(hd => hd.City)
+             .ToListAsync();
+        
+         var campsiteResponseList = availableCampsites.Select(c => new GetAllCampsitesResponseModel
+         {
+             CampsiteId = c.CampsiteId,
+             HolidayDestinationName = c.HolidayDestination.HolidayDestinationName,
+             CityName = c.HolidayDestination.City.CityName,
+             Name = c.Name,
+             Description = c.Description,
+             Rate = c.Rate,
+             AdultPrice = c.AdultPrice,
+             ChildPrice = c.ChildPrice,
+             Capacity = c.Capacity
+         }).ToList();
+
+         return campsiteResponseList;
+     }
+     public async Task<CampsitesResponseModel> GetCampsiteById(string id)
     {
         var campsite = await context.Campsites.FirstOrDefaultAsync(c => c.CampsiteId == id);
         var owner = await context.UserInfo.FirstOrDefaultAsync(x => x.UserID == campsite.OwnerID);
@@ -200,7 +267,6 @@ public class CampsiteService :ICampsiteService
           .ToList(); 
     }
      
-    // method that returns all campsites according to city
     public async Task<List<GetAllCampsitesResponseModel>> GetCampsitesByCity(string city)
     {
         var campsites = await context.Campsites

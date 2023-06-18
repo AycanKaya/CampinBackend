@@ -11,4 +11,5 @@ public interface ICampsiteService
     Task<List<GetAllCampsitesResponseModel>> GetAllCampsites();
     Task<List<GetAllCampsitesResponseModel>> GetPopulerCampsites();
     Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string holidayDestinationName, string start, string end);
+    Task<List<GetAllCampsitesResponseModel>> GetAvailableCampsites(string cityName, string start, string end);
 }
