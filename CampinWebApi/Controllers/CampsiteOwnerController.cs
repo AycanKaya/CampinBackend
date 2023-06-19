@@ -4,6 +4,7 @@ using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Core.Models;
+using CampinWebApi.Core.Models.CampsiteModels;
 using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -95,6 +96,42 @@ public class CampsiteOwnerController : ControllerBase
         {
             var updatedCampsite = await campsiteOwnerService.UpdateCampsite(dto);
             var result = new BaseResponseModel<Campsite>(updatedCampsite, "Campsite updated");
+            return new OkObjectResult(result);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch (FileNotFoundException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Only owner can update campsite!" , (int)HttpStatusCode.Unauthorized);
+            return new UnauthorizedObjectResult(response);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
+    }
+    
+    [HttpGet("GetOwnerCampsites")]
+    public async Task<IActionResult> GetOwnerCampsites()
+    {
+        try
+        {
+            var userToken = HttpContext.Request.Headers.Authorization.ToString();
+            var campsites = await campsiteOwnerService.GetOwnerCampsites(userToken);
+            var result = new BaseResponseModel<CampsiteResponseModel[]>(campsites, "Done.");
             return new OkObjectResult(result);
         }
         catch (ValidationException exception)

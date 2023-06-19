@@ -4,6 +4,7 @@ using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Core.Models;
+using CampinWebApi.Core.Models.CampsiteModels;
 using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,7 +65,7 @@ public class FavoriteCampsiteController : ControllerBase
         {
             var userToken = HttpContext.Request.Headers.Authorization.ToString();
             var favoriteCampsites = await favoriteCampsitesService.GetFavoriteCampsites(userToken);
-            var result = new BaseResponseModel<List<Campsite>>(favoriteCampsites, "Get favorite campsites.");
+            var result = new BaseResponseModel<List<CampsiteResponseModel>>(favoriteCampsites, "Get favorite campsites.");
             return new OkObjectResult(result);
         }
         catch (UnauthorizedAccessException exception)
@@ -76,6 +77,41 @@ public class FavoriteCampsiteController : ControllerBase
             return new InternalServerErrorResult();
         }
     }
-   
+
+    [HttpDelete("RemoveFavoriteCampsite")]
+    public async Task<IActionResult> RemoveFavoriteCampsite(string campsiteId)
+    {
+        try
+        {
+            var userToken = HttpContext.Request.Headers.Authorization.ToString();
+            var addeFavorites = await favoriteCampsitesService.RemoveFavoriteCampsite(campsiteId, userToken);
+            var result = new BaseResponseModel<bool>(addeFavorites, "Deleted campsite from favorites." );
+            return new OkObjectResult(result);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch (FileNotFoundException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
+            return new NotFoundObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
+    }
+
 
 }

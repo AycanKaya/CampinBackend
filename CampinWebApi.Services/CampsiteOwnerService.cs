@@ -1,6 +1,7 @@
 using System.Globalization;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
+using CampinWebApi.Core.Models.CampsiteModels;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -63,6 +64,46 @@ public class CampsiteOwnerService : ICampsiteOwnerService
         context.Campsites.Add(campsite);
         await context.SaveChangesAsync();
         return campsite;
+    }
+
+    public async Task<CampsiteResponseModel[]> GetOwnerCampsites(string usertoken)
+    {
+        var userıd = jwtService.GetUserIdFromJWT(usertoken);
+        var userInfo = await context.UserInfo.FirstOrDefaultAsync(x => x.UserID == userıd);
+        
+        var campsiteList = await context.Campsites.Where(x => x.OwnerID == userıd).ToArrayAsync();
+
+        var response = new List<CampsiteResponseModel>();
+        
+        foreach (var campsite in campsiteList)
+        {
+            var holidayDestination = await context.HolidayDestinations.FirstOrDefaultAsync(x => x.Id == campsite.HolidayDestinationId);
+            var city = await context.Cities.FirstOrDefaultAsync(x => x.Id == holidayDestination.CityId);
+        
+            var campsiteModel = new CampsiteResponseModel
+            {
+                CampsiteId = campsite.CampsiteId,
+                Name = campsite.Name,
+                HolidayDestinationName =  holidayDestination.HolidayDestinationName,
+                CityName = city.CityName,
+                OwnerId = userıd,
+                Description = campsite.Description,
+                AdultPrice = campsite.AdultPrice,
+                ChildPrice = campsite.ChildPrice,
+                Capacity = campsite.Capacity,
+                SeasonStartDate = campsite.SeasonStartDate,
+                SeasonCloseDate = campsite.SeasonCloseDate,
+                OwnerEmail = userInfo.Email,
+                OwnerName = userInfo.Name,
+                OwnerSurname = userInfo.Surname,
+                OwnerPhoneNumber = userInfo.PhoneNumber,
+                Rate = campsite.Rate,
+                lng = campsite.lng,
+                lat = campsite.lat,
+            };
+            response.Add(campsiteModel);
+        }
+        return response.ToArray();
     }
     
     public async Task<Campsite> UpdateCampsite(UpdateCampsiteDTO dto)
