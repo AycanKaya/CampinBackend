@@ -7,6 +7,7 @@ using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO;
 using CampinWebApi.Core.DTO.UserDTO;
 using CampinWebApi.Core.Models;
+using CampinWebApi.Core.Models.AccountModels;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -85,9 +86,10 @@ namespace CampinWebApi.Services
             return true;
         }
 
-        public async Task<AuthenticationResponseDTO> Login(AuthenticationRequestDTO authenticationRequest, string ipAddress)
+        public async Task<LoginResponseModel> Login(AuthenticationRequestDTO authenticationRequest, string ipAddress)
         {
             var user = await userManager.FindByEmailAsync(authenticationRequest.Email);
+            
             if (user == null)
                 throw new Exception($"User not be found");
 
@@ -99,19 +101,22 @@ namespace CampinWebApi.Services
 
             var userClaims = await userManager.GetClaimsAsync(user);
             var roles = await userManager.GetRolesAsync(user);
+            
 
             JwtSecurityToken token = jwtService.GetToken(userClaims, roles, user);
             var userInfo= await context.UserInfo.Where(x => x.UserID == user.Id).FirstOrDefaultAsync();
 
-            AuthenticationResponseDTO dto = new AuthenticationResponseDTO();
-            dto.Id = user.Id;
+            LoginResponseModel dto = new LoginResponseModel();
+            dto.UserID = user.Id;
             dto.JWToken = new JwtSecurityTokenHandler().WriteToken(token);
             dto.Email = user.Email;
             dto.Name = userInfo.Name;
             dto.Surname = userInfo.Surname;
-            var rolesList = await userManager.GetRolesAsync(user).ConfigureAwait(false);
-            dto.Roles = rolesList.ToList();
-            dto.IsVerified = user.EmailConfirmed;
+            dto.Address = userInfo.Address;
+            dto.Contry = userInfo.Contry;
+            dto.Gender = userInfo.Gender;
+            dto.PhoneNumber = userInfo.PhoneNumber;
+            dto.Role = userInfo.Role;
             var refreshToken = GenerateRefreshToken(ipAddress);
             dto.RefreshToken = refreshToken.Token;
             return dto;

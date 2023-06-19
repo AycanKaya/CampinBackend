@@ -5,6 +5,7 @@ using System.Web.Http;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO;
 using CampinWebApi.Core.Models;
+using CampinWebApi.Core.Models.AccountModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CampinWebApi.Controllers
@@ -26,7 +27,7 @@ namespace CampinWebApi.Controllers
             try
             {
                 var user = await accountService.Login(request, GenerateIPAddress());
-                var result = new BaseResponseModel<AuthenticationResponseDTO>(user, "Logged in");
+                var result = new BaseResponseModel<LoginResponseModel>(user, "Logged in");
                 return  new OkObjectResult(result);   
             }
             catch (ValidationException exception)

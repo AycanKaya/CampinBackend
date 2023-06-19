@@ -211,6 +211,7 @@ public class CampsiteService :ICampsiteService
         var campsiteResponse = new CampsitesResponseModel
         {
             Campsite = campsiteModel,
+            reviewCount = commentList.Length,
             Comments = commentResponseModelList.ToArray(),
             ImageUrls = imageUrls,
             Features = featureList
