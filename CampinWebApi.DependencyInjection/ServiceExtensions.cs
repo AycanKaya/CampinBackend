@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddTransient<IUserInfoService, UserInfoService>();
         services.AddTransient<ICountryService, CountryService>();
         services.AddTransient<IAzureBlobStorageService, AzureBlobStorageService>();
+        services.AddTransient<IAdminService, AdminService>();
         
         services.Configure<JWTModel>(configuration.GetSection("JWTSettings"));
         

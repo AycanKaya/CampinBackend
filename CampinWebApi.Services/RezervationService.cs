@@ -2,6 +2,7 @@ using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CardDTO;
 using CampinWebApi.Core.DTO.PaymentDTO;
 using CampinWebApi.Core.DTO.RezervationDTO;
+using CampinWebApi.Core.Models.CampsiteModels;
 using CampinWebApi.Core.Models.RezervationsModel;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
@@ -74,6 +75,8 @@ public class RezervationService : IRezervationService
     public async Task<List<GetUserReservedModel>> GetUserRezervedCampsite(string userToken)
     {
         var userId = jwtService.GetUserIdFromJWT(userToken);
+        var user = await context.UserInfo.FirstOrDefaultAsync(x => x.UserID == userId);
+        
         var rezervations = await this.context.Rezervations
             .Where(r => r.CustomerId == userId)
             .ToListAsync();
@@ -85,18 +88,46 @@ public class RezervationService : IRezervationService
             var campsite = await this.context.Campsites
                 .FirstOrDefaultAsync(c => c.CampsiteId == rezervation.CampsiteId);
 
+            var holidayDestination =
+                await context.HolidayDestinations.FirstOrDefaultAsync(x => x.Id == campsite.HolidayDestinationId);
+            
+            var city = await context.Cities.FirstOrDefaultAsync(x => x.Id == holidayDestination.CityId);
+            
+            // check user comment is exist
+            var userCommentIsExist = await context.Comments
+                .AnyAsync(x => x.CampsiteId == campsite.CampsiteId && x.AuthorId == userId);
+
             if (campsite != null)
             {
                 var getUserReservedModel = new GetUserReservedModel
                 {
-                    Campsite = campsite,
-                    StartDate = rezervation.StartDate,
-                    EndDate = rezervation.EndDate,
+                    Campsite = new CampsiteResponseModel
+                    {
+                        Capacity = campsite.Capacity,
+                        CampsiteId = campsite.CampsiteId,
+                        Description = campsite.Description,
+                        HolidayDestinationName = holidayDestination.HolidayDestinationName,
+                        CityName = city.CityName,
+                        OwnerId = userId,
+                        OwnerName = user.Name,
+                        OwnerSurname = user.Surname,
+                        AdultPrice = campsite.AdultPrice,
+                        ChildPrice = campsite.ChildPrice,
+                        OwnerEmail = user.Email,
+                        OwnerPhoneNumber = user.PhoneNumber,
+                        Rate = campsite.Rate,
+                        SeasonCloseDate = campsite.SeasonCloseDate,
+                        SeasonStartDate = campsite.SeasonStartDate,
+                        lat = campsite.lat,
+                        lng = campsite.lng,
+                        Name = campsite.Name
+                    },
+                    rezervationStartDate = rezervation.StartDate,
+                    rezervationEndDate = rezervation.EndDate,
                     NumOfAdult = rezervation.NumOfAdult,
                     NumOfChilder = rezervation.NumOfChilder,
-                    isPaid = rezervation.isPaid
+                    isCommentExist = userCommentIsExist
                 };
-
                 getUserReservedModels.Add(getUserReservedModel);
             }
         }

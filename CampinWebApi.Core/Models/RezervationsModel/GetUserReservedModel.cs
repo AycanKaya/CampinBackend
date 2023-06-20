@@ -1,13 +1,14 @@
+using CampinWebApi.Core.Models.CampsiteModels;
 using CampinWebApi.Domain.Entities;
 
 namespace CampinWebApi.Core.Models.RezervationsModel;
 
 public class GetUserReservedModel
 {
-    public Campsite Campsite { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
+    public CampsiteResponseModel Campsite { get; set; }
+    public DateTime rezervationStartDate { get; set; }
+    public DateTime rezervationEndDate { get; set; }
     public int NumOfAdult { get; set; }
     public int NumOfChilder { get; set; }
-    public bool isPaid { get; set; }
+    public bool isCommentExist { get; set; }
 }

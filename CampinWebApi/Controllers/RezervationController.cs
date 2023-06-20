@@ -2,8 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Web.Http;
 using CampinWebApi.Contracts;
-using CampinWebApi.Core.DTO.CardDTO;
-using CampinWebApi.Core.DTO.PaymentDTO;
 using CampinWebApi.Core.DTO.RezervationDTO;
 using CampinWebApi.Core.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +21,7 @@ public class RezervationController :ControllerBase
         this.rezervationService = rezervationService;
     }
     
-    [HttpPost("MakeRezervation")]
+    [HttpPost("MakeReservation")]
     public async Task<IActionResult> AddCustomerInfo(MakeRezervationDTO dto)
     {
         try
@@ -53,7 +51,7 @@ public class RezervationController :ControllerBase
     }
     
     
-    [HttpGet("GetUserRezervedCampsite")]
+    [HttpGet("GetUserReservedCampsite")]
     public async Task<IActionResult> GetUserRezervedCampsite()
     {
         try
