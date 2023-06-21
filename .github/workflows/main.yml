@@ -1,0 +1,30 @@
+name: Build & Test Campin Backend Project
+
+on:
+  push:
+    branches:
+    - main
+
+env:
+  DOTNET_VERSION: "7.0.203"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET 📦
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies 📂
+        run: dotnet restore
+
+      - name: Build 🧱
+        run: dotnet build CampinWebApi --no-restore
+
+#       - name: Test 🧪
+#         run: dotnet test WebApi --configuration Release --no-build
