@@ -22,16 +22,6 @@ jobs:
 
       - name: Install dependencies 📂
         run: dotnet restore
-        
-#       - name: Enter CampinWebApi project
-#         run: cd CampinWebApi.Core
-        
-      - name: Add HTTP package 🛠️
-        working-directory: ./CampinWebApi.core
-        run: dotnet add package Microsoft.AspNetCore.Http --version 2.2.2
-        
-#       - name: Get back to main folder
-#         run: cd ..
 
       - name: Build 🧱
         run: dotnet build CampinWebApi --no-restore
