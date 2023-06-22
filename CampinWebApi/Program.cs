@@ -7,7 +7,11 @@ ConfigurationManager configuration = builder.Configuration;
 
 builder.Services.AddPersistence(configuration);
 builder.Services.AddSwaggerExtension();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonConverterExtensions.DateOnlyJsonConverter());
+});;
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

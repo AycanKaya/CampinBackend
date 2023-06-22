@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO;
 using CampinWebApi.Core.DTO.UserDTO;
-using CampinWebApi.Core.Models;
 using CampinWebApi.Core.Models.AccountModels;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
@@ -35,7 +34,7 @@ namespace CampinWebApi.Services
         {
             var exist_user = await userManager.FindByEmailAsync(registerRequest.Email);
             if (exist_user != null)
-                throw new BadHttpRequestException($" This email :  '{registerRequest.Email}' is already taken.");
+                throw new BadHttpRequestException($" This email is already taken.");
             
             if (isValidEmail(registerRequest.Email) && isValidatePassword(registerRequest.Password))
             {
@@ -91,12 +90,12 @@ namespace CampinWebApi.Services
             var user = await userManager.FindByEmailAsync(authenticationRequest.Email);
             
             if (user == null)
-                throw new Exception($"User not be found");
+                throw new BadHttpRequestException($"Invalid Credentials");
 
             var result = await signInManager.PasswordSignInAsync(user.UserName, authenticationRequest.Password, false, lockoutOnFailure: false);
             if (!result.Succeeded)
             {
-                throw new BadHttpRequestException($"Invalid Credentials for '{authenticationRequest.Email}'.");
+                throw new BadHttpRequestException($"Invalid Credentials");
             }
 
             var userClaims = await userManager.GetClaimsAsync(user);
@@ -105,6 +104,8 @@ namespace CampinWebApi.Services
 
             JwtSecurityToken token = jwtService.GetToken(userClaims, roles, user);
             var userInfo= await context.UserInfo.Where(x => x.UserID == user.Id).FirstOrDefaultAsync();
+            
+            var userFavoriteCampsite = await context.FavoriteCampsites.Where(x => x.userId == user.Id).Select(x => x.campsiteId).ToArrayAsync();
 
             LoginResponseModel dto = new LoginResponseModel();
             dto.UserID = user.Id;
@@ -116,6 +117,7 @@ namespace CampinWebApi.Services
             dto.Contry = userInfo.Contry;
             dto.Gender = userInfo.Gender;
             dto.PhoneNumber = userInfo.PhoneNumber;
+            dto.FavoritedCampsiteIds = userFavoriteCampsite;
             dto.Role = userInfo.Role;
             var refreshToken = GenerateRefreshToken(ipAddress);
             dto.RefreshToken = refreshToken.Token;
@@ -191,7 +193,6 @@ namespace CampinWebApi.Services
             using var rngCryptoServiceProvider = new RNGCryptoServiceProvider();
             var randomBytes = new byte[40];
             rngCryptoServiceProvider.GetBytes(randomBytes);
-            // convert random bytes to hex string
             return BitConverter.ToString(randomBytes).Replace("-", "");
         }
         private bool isValidEmail(string email)

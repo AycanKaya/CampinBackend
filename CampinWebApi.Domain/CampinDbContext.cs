@@ -85,7 +85,7 @@ namespace CampinWebApi.Domain
             });
             modelBuilder.Entity<CampsiteImages>(entity =>
             {
-              entity.HasNoKey();
+              entity.HasKey(c => c.Id);
               entity.ToTable(name: "CampsiteImages");
             });
             modelBuilder.Entity<Country>(entity =>

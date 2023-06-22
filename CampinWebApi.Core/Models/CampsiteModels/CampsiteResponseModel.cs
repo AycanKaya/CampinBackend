@@ -20,4 +20,5 @@ public class CampsiteResponseModel
     public string lat { get; set; }
     public string lng { get; set; }
     public int Capacity { get; set; }
+    public string defaultImage { get; set; }
 }

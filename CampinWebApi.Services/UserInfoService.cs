@@ -44,6 +44,7 @@ public class UserInfoService :IUserInfoService
         userInfo.Email = dto.Email;
         userInfo.PhoneNumber = dto.PhoneNumber;
         userInfo.Role = dto.Role;
+        userInfo.Gender = dto.Gender;
         
         await context.UserInfo.AddAsync(userInfo);
         await context.SaveChangesAsync();
@@ -58,7 +59,8 @@ public class UserInfoService :IUserInfoService
         userInfo.Contry = dto.Contry;
         userInfo.Email = dto.Email;
         userInfo.PhoneNumber = dto.PhoneNumber;
-        userInfo.Role = dto.Role; 
+        userInfo.Role = dto.Role ?? userInfo.Role;
+        userInfo.Gender = dto.Gender;
         
         context.UserInfo.Update(userInfo);
         await context.SaveChangesAsync();

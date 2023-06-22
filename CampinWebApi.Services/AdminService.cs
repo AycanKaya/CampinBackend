@@ -1,6 +1,5 @@
 using CampinWebApi.Contracts;
 using CampinWebApi.Domain;
-using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +29,15 @@ public class AdminService :IAdminService
     public async Task<bool> DeleteCampsite(string id)
     {
         var campsite = await context.Campsites.FindAsync(id);
+        
+        // campsite'a bağlı rezervasoynları sil 
+        var reservations = await context.Rezervations.Where(x => x.CampsiteId == id).ToListAsync();
+        context.Rezervations.RemoveRange(reservations);
+        
+        //camsite'a bağlı yorumları sil
+        var comments = await context.Comments.Where(x => x.CampsiteId == id).ToListAsync();
+        context.Comments.RemoveRange(comments);
+
         if (campsite == null)
             throw new FileNotFoundException("Campsite not found");
 
@@ -71,30 +79,5 @@ public class AdminService :IAdminService
         await userManager.DeleteAsync(user);
         return true;
     }
-    
-    // Admin can delete the comment
-    public async Task<bool> DeleteComment(int id)
-    {
-        var comment = await context.Comments.FindAsync(id);
-        if (comment == null)
-            throw new FileNotFoundException("Comment not found");
-
-        context.Comments.Remove(comment);
-        await context.SaveChangesAsync();
-        return true;
-    }
-    
-    // Admin can delete the reservation
-    public async Task<bool> DeleteReservation(int rezervationId)
-    {
-        var reservation = await context.Rezervations.FindAsync(rezervationId);
-        if (reservation == null)
-            throw new FileNotFoundException("Reservation not found");
-
-        context.Rezervations.Remove(reservation);
-        await context.SaveChangesAsync();
-        return true;
-    }
-    
 }
 

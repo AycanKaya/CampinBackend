@@ -1,5 +1,7 @@
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Web.Http;
 using CampinWebApi.Contracts;
-using CampinWebApi.Core.DTO.BlobStorageDTO;
 using CampinWebApi.Core.Models;
 using CampinWebApi.Core.Models.BlobStorageModel;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +19,32 @@ public class AzureBlobStorageController : ControllerBase
     }
     
     [HttpPost("UploadFile")]
-    public async Task<BaseResponseModel<BlobStorageResponseModel>> UploadFile(UploadFileRequestDTO file)
+    public async Task<IActionResult> UploadFile(IFormFile[] file)
     {
-        var isUpload = await azureBlobStorageService.UploadFileToBlobStorage(file);
-        return new BaseResponseModel<BlobStorageResponseModel>(isUpload);
+        try
+        {
+            var isUpload = await azureBlobStorageService.UploadFilesToBlobStorage(file);
+            var result = new BaseResponseModel<string[]>(isUpload, "Campsite found");
+            return new OkObjectResult(result);
+        }
+        catch (ValidationException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
+            return new BadRequestObjectResult(response);
+        }
+        catch(BadHttpRequestException exception)
+        {
+            var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
+            return new BadRequestObjectResult(response);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new UnauthorizedObjectResult(exception.Message);
+        }
+        catch (Exception)
+        {
+            return new InternalServerErrorResult();
+        }
+      
     }
 }

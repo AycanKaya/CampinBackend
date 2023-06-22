@@ -2,10 +2,10 @@ using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using CampinWebApi.Contracts;
-using CampinWebApi.Core.DTO.BlobStorageDTO;
 using CampinWebApi.Core.Models.BlobStorageModel;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -26,64 +26,59 @@ public class AzureBlobStorageService : IAzureBlobStorageService
         this.logger = logger;
     }
 
-    public async Task<BlobStorageResponseModel> UploadFileToBlobStorage(UploadFileRequestDTO fileRequestDto)
+
+    public async Task<string[]> UploadFilesToBlobStorage(IFormFile[] fileRequestDto)
+    {
+        var response = new List<string>();
+        foreach (var file in fileRequestDto)
+        {
+            var upload = await UploadFileToBlobStorage(file);
+            response.Add(upload);
+        }
+
+        return response.ToArray();
+    }
+    private async Task<string> UploadFileToBlobStorage(IFormFile fileRequestDto)
     {
         BlobStorageResponseModel response = new();
-        BlobContainerClient container = new BlobContainerClient(storageConnectionString, "campsiteimages");
-        
         try
         {
-            BlobClient client = container.GetBlobClient(fileRequestDto.blob.FileName);
+            BlobContainerClient container = new BlobContainerClient(storageConnectionString, "campsiteimages");
 
-            await using (Stream? data = fileRequestDto.blob.OpenReadStream())
+            var fileName = Guid.NewGuid().ToString();
+            
+            BlobClient client = container.GetBlobClient(fileName);
+            
+            var blobUploadOptions = new BlobUploadOptions()
             {
-                await client.UploadAsync(data);
-            }
+                HttpHeaders = new BlobHttpHeaders()
+                {
+                    ContentType = fileRequestDto.ContentType
+                }
+            };
 
-            response.Status = $"File {fileRequestDto.blob.FileName} Uploaded Successfully";
-            response.Error = false;
-            response.Blob.BlobStorageUrl = client.Uri.AbsoluteUri;
-            response.Blob.BlobName = client.Name;
-            response.Blob.ContentType = fileRequestDto.blob.ContentType;
-            response.Blob.Content = fileRequestDto.blob.OpenReadStream();
+            await using (Stream? data = fileRequestDto.OpenReadStream())
+            {
+                await client.UploadAsync(data, blobUploadOptions);
+            }
+            return client.Uri.AbsoluteUri;
         }
-        // If the file already exists, we catch the exception and do not upload it
         catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists)
         {
             logger.LogError(
-                $"File with name {fileRequestDto.blob.FileName} already exists in container. Set another name to store the file in the container: campsiteimages.");
+                $"File with name {fileRequestDto.FileName} already exists in container. Set another name to store the file in the container: campsiteimages.");
             response.Status =
-                $"File with name {fileRequestDto.blob.FileName} already exists. Please use another name to store your file.";
+                $"File with name {fileRequestDto.FileName} already exists. Please use another name to store your file.";
             response.Error = true;
-            return response;
+            throw ex;
         }
-        // If we get an unexpected error, we catch it here and return the error message
         catch (RequestFailedException ex)
         {
-            // Log error to console and create a new response we can return to the requesting method
             logger.LogError($"Unhandled Exception. ID: {ex.StackTrace} - Message: {ex.Message}");
             response.Status = $"Unexpected error: {ex.StackTrace}. Check log with StackTrace ID.";
             response.Error = true;
-            return response;
+            throw ex;
         }
-        var campsite = await context.Campsites.FirstOrDefaultAsync(c => c.CampsiteId == fileRequestDto.campsiteId);
-        if (campsite == null)
-        {
-            logger.LogError($"Campsite with id {fileRequestDto.campsiteId} not found.");
-            response.Status = $"Campsite with id {fileRequestDto.campsiteId} not found.";
-            response.Error = true;
-            return response;
-        }
-        
-        var campsiteImage = new CampsiteImages
-        {
-            CampsiteId = campsite.CampsiteId,
-            ImageUrl = response.Blob.BlobStorageUrl
-        };
-        
-        await context.CampsiteImages.AddAsync(campsiteImage);
-        context.SaveChanges();
-        return response;
-
     }
+
 }

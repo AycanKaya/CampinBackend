@@ -36,7 +36,7 @@ public class CampsiteService :ICampsiteService
             .FirstOrDefaultAsync();
 
         var reservedCampsites = await context.Rezervations
-            .Where(r => r.StartDate <= endDate && r.EndDate >= startDate)
+            .Where(r => r.StartDate <= startDate && r.EndDate >= endDate)
             .Select(r => r.CampsiteId)
             .ToListAsync();
         
@@ -56,7 +56,9 @@ public class CampsiteService :ICampsiteService
             Rate = c.Rate,
             AdultPrice = c.AdultPrice,
             ChildPrice = c.ChildPrice,
-            Capacity = c.Capacity
+            Capacity = c.Capacity,
+            SeasonCloseDate = c.SeasonCloseDate,
+            SeasonStartDate = c.SeasonStartDate
         }).ToList();
         
         return campsiteResponseList;
@@ -94,7 +96,7 @@ public class CampsiteService :ICampsiteService
             .ToListAsync();
 
         var reservedCampsites = await context.Rezervations
-            .Where(r => r.StartDate <= endDate && r.EndDate >= startDate)
+            .Where(r => r.StartDate <= startDate && r.EndDate >= endDate)
             .Select(r => r.CampsiteId)
             .ToListAsync();
         
@@ -114,7 +116,9 @@ public class CampsiteService :ICampsiteService
             Rate = c.Rate,
             AdultPrice = c.AdultPrice,
             ChildPrice = c.ChildPrice,
-            Capacity = c.Capacity
+            Capacity = c.Capacity,
+            SeasonCloseDate = c.SeasonCloseDate,
+            SeasonStartDate = c.SeasonStartDate
         }).ToList();
         
         return campsiteResponseList;
@@ -129,7 +133,7 @@ public class CampsiteService :ICampsiteService
              DateTimeStyles.None, out var enddate) ? enddate : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
 
          var reservedCampsites = await context.Rezervations
-             .Where(r => r.StartDate <= endDate && r.EndDate >= startDate)
+             .Where(r => r.StartDate <= startDate && r.EndDate >= endDate)
              .Select(r => r.CampsiteId)
              .ToListAsync();
         
@@ -149,7 +153,9 @@ public class CampsiteService :ICampsiteService
              Rate = c.Rate,
              AdultPrice = c.AdultPrice,
              ChildPrice = c.ChildPrice,
-             Capacity = c.Capacity
+             Capacity = c.Capacity,
+             SeasonCloseDate = c.SeasonCloseDate,
+             SeasonStartDate = c.SeasonStartDate
          }).ToList();
 
          return campsiteResponseList;
@@ -162,6 +168,8 @@ public class CampsiteService :ICampsiteService
         var holidayDestination = await context.HolidayDestinations.FirstOrDefaultAsync(x => x.Id == campsite.HolidayDestinationId);
         var city = await context.Cities.FirstOrDefaultAsync(x => x.Id == holidayDestination.CityId);
         
+        var imageUrls = await context.CampsiteImages.Where(x => x.CampsiteId == id).Select(x => x.ImageUrl).ToArrayAsync();
+
         var campsiteModel = new CampsiteResponseModel
         {
             CampsiteId = campsite.CampsiteId,
@@ -182,6 +190,7 @@ public class CampsiteService :ICampsiteService
             Rate = campsite.Rate,
             lng = campsite.lng,
             lat = campsite.lat,
+            defaultImage = imageUrls[0],
         };
 
         if (campsite == null)
@@ -206,7 +215,6 @@ public class CampsiteService :ICampsiteService
             commentResponseModelList.Add(response);
         }
         var featureList = await context.Features.Where(x => x.Id == campsite.FeatureId).FirstOrDefaultAsync();
-        var imageUrls = await context.CampsiteImages.Where(x => x.CampsiteId == id).Select(x => x.ImageUrl).ToArrayAsync();
         
         var campsiteResponse = new CampsitesResponseModel
         {
@@ -236,7 +244,18 @@ public class CampsiteService :ICampsiteService
             Rate = c.Rate,
             AdultPrice = c.AdultPrice,
             ChildPrice = c.ChildPrice,
-            Capacity = c.Capacity
+            Capacity = c.Capacity,
+            lng = c.lng,
+            lat = c.lat,
+            defaultImage = context.CampsiteImages
+                .Where(ci => ci.CampsiteId == c.CampsiteId)
+                .Select(ci => ci.ImageUrl)
+                .FirstOrDefault(),
+            SeasonCloseDate = c.SeasonCloseDate,
+            SeasonStartDate = c.SeasonStartDate,
+            reviewCount =  context.Comments.
+                Include(x => x.Author)
+                .Where(x => x.CampsiteId == c.CampsiteId).ToArray().Length
         }).ToList();
 
         return campsiteResponseList;
@@ -259,7 +278,18 @@ public class CampsiteService :ICampsiteService
           Rate = c.Rate,
           AdultPrice = c.AdultPrice,
           ChildPrice = c.ChildPrice,
-          Capacity = c.Capacity
+          Capacity = c.Capacity,
+          lng = c.lng,
+          lat = c.lat,
+          defaultImage = context.CampsiteImages
+              .Where(ci => ci.CampsiteId == c.CampsiteId)
+              .Select(ci => ci.ImageUrl)
+              .FirstOrDefault(),
+          SeasonCloseDate = c.SeasonCloseDate,
+          SeasonStartDate = c.SeasonStartDate,
+          reviewCount =  context.Comments.
+              Include(x => x.Author)
+              .Where(x => x.CampsiteId == c.CampsiteId).ToArray().Length
       }).ToList();
 
       return campsiteResponseList
@@ -289,7 +319,16 @@ public class CampsiteService :ICampsiteService
             Rate = c.Rate,
             AdultPrice = c.AdultPrice,
             ChildPrice = c.ChildPrice,
-            Capacity = c.Capacity
+            Capacity = c.Capacity,
+            lng = c.lng,
+            lat = c.lat,
+            defaultImage = context.CampsiteImages
+                .Where(ci => ci.CampsiteId == c.CampsiteId)
+                .Select(ci => ci.ImageUrl)
+                .FirstOrDefault(),
+            SeasonCloseDate = c.SeasonCloseDate,
+            SeasonStartDate = c.SeasonStartDate
+
         }).ToList();
         
         return campsiteResponseList;

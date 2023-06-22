@@ -25,4 +25,5 @@ public class CreateCampsiteRequestDTO
     public bool HasFirePit { get; set; }
     public bool HasSignal { get; set; }
     public bool IsNearSea { get; set; }
+    public string[] ImageUrls { get; set; }
 }

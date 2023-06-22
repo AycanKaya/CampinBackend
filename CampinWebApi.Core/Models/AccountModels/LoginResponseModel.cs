@@ -17,4 +17,6 @@ public class LoginResponseModel
     public string JWToken { get; set; }
     [JsonIgnore]
     public string RefreshToken { get; set; }
+    
+    public string[] FavoritedCampsiteIds { get; set; }
 }

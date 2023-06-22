@@ -126,49 +126,7 @@ namespace CampinWebApi.Controllers
                 return new InternalServerErrorResult();
             }
         }
-
-        [HttpPost]
-        [Route("add-role")]
-        public async Task<IActionResult> AddRoleToUser(string roleName)
-        {
-            try
-            {
-                var userToken = HttpContext.Request.Headers.Authorization.ToString();
-                var response = new BaseResponseModel<string>();
-                var isSucced = await accountService.AddRoleToUser(userToken, roleName);
-                if (isSucced)
-                {
-                    response.Succeeded = isSucced;
-                    response.Message = "Role added to user. ";
-                    response.Errors = "No error";
-                }
-                return new OkObjectResult(response);
-            } 
-            catch (ValidationException exception)
-            {
-                var response = new ErrorResponseModel(exception.Message,"Validation Error", (int)HttpStatusCode.BadRequest);
-                return new BadRequestObjectResult(response);
-            }
-            catch (FileNotFoundException exception)
-            {
-                var response = new ErrorResponseModel(exception.Message,"Object not found", (int)HttpStatusCode.BadRequest);
-                return new NotFoundObjectResult(response);
-            }
-            catch(BadHttpRequestException exception)
-            {
-                var response = new ErrorResponseModel(exception.Message,"Bad Request" , exception.StatusCode);
-                return new BadRequestObjectResult(response);
-            }
-            catch (UnauthorizedAccessException exception)
-            {
-                return new UnauthorizedObjectResult(exception.Message);
-            }
-            catch (Exception)
-            {
-                return new InternalServerErrorResult();
-            }
-           
-        }
+        
         private string GetToken()
         {
             return HttpContext.Request.Headers.Authorization.ToString();

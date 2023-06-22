@@ -5,6 +5,6 @@ namespace CampinWebApi.Contracts;
 
 public interface IAzureBlobStorageService
 {
-    Task<BlobStorageResponseModel> UploadFileToBlobStorage(UploadFileRequestDTO fileRequestDto);
-    
+    Task<string[]> UploadFilesToBlobStorage(IFormFile[] fileRequestDto);
+
 }

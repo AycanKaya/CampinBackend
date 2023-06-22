@@ -87,19 +87,18 @@ public class RezervationService : IRezervationService
         {
             var campsite = await this.context.Campsites
                 .FirstOrDefaultAsync(c => c.CampsiteId == rezervation.CampsiteId);
-
-            var holidayDestination =
-                await context.HolidayDestinations.FirstOrDefaultAsync(x => x.Id == campsite.HolidayDestinationId);
+            
+            if (campsite != null)
+            { 
+                var holidayDestination = await context.HolidayDestinations.FirstOrDefaultAsync(x => x.Id == campsite.HolidayDestinationId);
             
             var city = await context.Cities.FirstOrDefaultAsync(x => x.Id == holidayDestination.CityId);
             
             // check user comment is exist
             var userCommentIsExist = await context.Comments
                 .AnyAsync(x => x.CampsiteId == campsite.CampsiteId && x.AuthorId == userId);
-
-            if (campsite != null)
-            {
-                var getUserReservedModel = new GetUserReservedModel
+            
+            var getUserReservedModel = new GetUserReservedModel
                 {
                     Campsite = new CampsiteResponseModel
                     {
@@ -116,7 +115,7 @@ public class RezervationService : IRezervationService
                         OwnerEmail = user.Email,
                         OwnerPhoneNumber = user.PhoneNumber,
                         Rate = campsite.Rate,
-                        SeasonCloseDate = campsite.SeasonCloseDate,
+                        SeasonCloseDate = campsite.SeasonStartDate,
                         SeasonStartDate = campsite.SeasonStartDate,
                         lat = campsite.lat,
                         lng = campsite.lng,

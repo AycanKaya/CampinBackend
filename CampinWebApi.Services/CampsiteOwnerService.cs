@@ -2,6 +2,7 @@ using System.Globalization;
 using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Core.Models.CampsiteModels;
+using CampinWebApi.Core.Models.CampsiteOwnerModels;
 using CampinWebApi.Domain;
 using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -13,14 +14,13 @@ public class CampsiteOwnerService : ICampsiteOwnerService
 {
     private readonly CampinDbContext context;
     private readonly IJWTService jwtService;
-    
     public CampsiteOwnerService(CampinDbContext context, IJWTService jwtService)
     {
         this.context = context;
         this.jwtService = jwtService;
     }
     
-    public async Task<Campsite> CreateCampsite(CreateCampsiteRequestDTO request, string userToken)
+    public async Task<CampsiteModel> CreateCampsite(CreateCampsiteRequestDTO request, string userToken)
     {
         var ownerID =  jwtService.GetUserIdFromJWT(userToken);
         var feature = new Features
@@ -63,7 +63,41 @@ public class CampsiteOwnerService : ICampsiteOwnerService
         };
         context.Campsites.Add(campsite);
         await context.SaveChangesAsync();
-        return campsite;
+
+        var lastId = await context.CampsiteImages
+            .OrderByDescending(e => e.Id)  // Id alanına göre azalan şekilde sırala
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync();
+        
+        foreach (var imageUrl in request.ImageUrls)
+        {
+            var newImage = new CampsiteImages()
+            {
+                Id = lastId+1,
+                CampsiteId = campsite.CampsiteId,
+                ImageUrl = imageUrl
+            };
+            lastId = lastId+2;
+            context.CampsiteImages.Add(newImage);
+        }
+        
+        await context.SaveChangesAsync();
+        return new CampsiteModel
+        {
+            CampsiteId = campsite.CampsiteId,
+            HolidayDestinationId = campsite.HolidayDestinationId,
+            FeatureId = campsite.FeatureId,
+            OwnerID = campsite.OwnerID,
+            Name = campsite.Name,
+            Description = campsite.Description,
+            Rate = campsite.Rate,
+            AdultPrice = campsite.AdultPrice,
+            ChildPrice = campsite.ChildPrice,
+            lat = campsite.lat,
+            lng = campsite.lng,
+            Capacity = campsite.Capacity,
+            DefaultImage = request.ImageUrls[0]
+        };
     }
 
     public async Task<CampsiteResponseModel[]> GetOwnerCampsites(string usertoken)
@@ -106,7 +140,7 @@ public class CampsiteOwnerService : ICampsiteOwnerService
         return response.ToArray();
     }
     
-    public async Task<Campsite> UpdateCampsite(UpdateCampsiteDTO dto)
+    public async Task<CampsiteModel> UpdateCampsite(UpdateCampsiteDTO dto)
     {
         DateTime startDate = DateTime.TryParseExact(dto.SeasonStartDate, "yyyy/MM/dd", CultureInfo.InvariantCulture,
             DateTimeStyles.None, out var date) ? date : throw new BadHttpRequestException("Invalid date format please use yyyy/MM/dd");
@@ -147,8 +181,60 @@ public class CampsiteOwnerService : ICampsiteOwnerService
         features.HasSignal = dto.HasSignal;
         features.IsNearSea = dto.IsNearSea;
 
-        await context.SaveChangesAsync();
-        return campsite;
+        var lastId = await context.CampsiteImages
+            .OrderByDescending(e => e.Id)  
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync();
+
+        string defaultImage = null;
+        if (dto.ImageUrls == null)
+        {
+            defaultImage = await context.CampsiteImages
+                .Where(ci => ci.CampsiteId == campsite.CampsiteId)
+                .Select(x => x.ImageUrl)
+                .FirstOrDefaultAsync();
+        }
+        
+        if (dto.ImageUrls != null)
+        {
+            var existingImages = await context.CampsiteImages
+                .Where(ci => ci.CampsiteId == campsite.CampsiteId)
+                .ToListAsync();
+            
+            context.CampsiteImages.RemoveRange(existingImages);
+
+            foreach (var imageUrl in dto.ImageUrls)
+            {
+                var newImage = new CampsiteImages()
+                {
+                    Id = lastId + 10,
+                    CampsiteId = campsite.CampsiteId,
+                    ImageUrl = imageUrl
+                };
+
+                lastId += 12;
+                context.CampsiteImages.Add(newImage);
+            }
+            defaultImage = dto.ImageUrls[0];
+        } 
+        await context.SaveChangesAsync(); 
+        
+        return new CampsiteModel
+        {
+            CampsiteId = campsite.CampsiteId,
+            HolidayDestinationId = campsite.HolidayDestinationId,
+            FeatureId = campsite.FeatureId,
+            OwnerID = campsite.OwnerID,
+            Name = campsite.Name,
+            Description = campsite.Description,
+            Rate = campsite.Rate,
+            AdultPrice = campsite.AdultPrice,
+            ChildPrice = campsite.ChildPrice,
+            lat = campsite.lat,
+            lng = campsite.lng,
+            Capacity = campsite.Capacity,
+            DefaultImage =  defaultImage
+        };;
     }
 
     public async Task<bool> DeleteCampsite(string id)

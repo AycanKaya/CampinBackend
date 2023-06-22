@@ -5,6 +5,7 @@ using CampinWebApi.Contracts;
 using CampinWebApi.Core.DTO.CampsiteDTO;
 using CampinWebApi.Core.Models;
 using CampinWebApi.Core.Models.CampsiteModels;
+using CampinWebApi.Core.Models.CampsiteOwnerModels;
 using CampinWebApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +32,7 @@ public class CampsiteOwnerController : ControllerBase
         {
             var userToken = HttpContext.Request.Headers.Authorization.ToString();
             var createdCampsite = await campsiteOwnerService.CreateCampsite(campsiteRequestDto, userToken);
-            var result = new BaseResponseModel<Campsite>(createdCampsite, "Campsite created.");
+            var result = new BaseResponseModel<CampsiteModel>(createdCampsite, "Campsite created.");
             return new OkObjectResult(result);
         }
         catch (ValidationException exception)
@@ -95,7 +96,7 @@ public class CampsiteOwnerController : ControllerBase
         try
         {
             var updatedCampsite = await campsiteOwnerService.UpdateCampsite(dto);
-            var result = new BaseResponseModel<Campsite>(updatedCampsite, "Campsite updated");
+            var result = new BaseResponseModel<CampsiteModel>(updatedCampsite, "Campsite updated");
             return new OkObjectResult(result);
         }
         catch (ValidationException exception)

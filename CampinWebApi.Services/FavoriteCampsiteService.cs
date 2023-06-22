@@ -66,6 +66,10 @@ public class FavoriteCampsitesService :IFavoriteCampsitesService
                 Rate = campsite.Rate,
                 lng = campsite.lng,
                 lat = campsite.lat,
+                defaultImage = dbContext.CampsiteImages
+                    .Where(ci => ci.CampsiteId == campsite.CampsiteId)
+                    .Select(ci => ci.ImageUrl)
+                    .FirstOrDefault()
             })
             .ToListAsync();
 
