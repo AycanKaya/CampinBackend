@@ -6,7 +6,9 @@ on:
     - main
 
 env:
-  DOTNET_VERSION: "7.0.203"
+  AZURE_WEBAPP_NAME: continuousDeploymentApp
+  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
+  DOTNET_VERSION: "6.0.x"
 
 jobs:
   build:
@@ -25,6 +27,17 @@ jobs:
 
       - name: Build 🧱
         run: dotnet build CampinWebApi --no-restore
+        
+      - name: Publish
+        run: dotnet publish --configuration Release --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+        
+      - name: Deployment
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          
 
 #       - name: Test 🧪
 #         run: dotnet test WebApi --configuration Release --no-build
