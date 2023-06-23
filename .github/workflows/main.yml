@@ -28,6 +28,9 @@ jobs:
       - name: Build 🧱
         run: dotnet build CampinWebApi --no-restore
         
+      - name: Test 🧪
+        run: dotnet test --no-build
+        
       - name: Publish
         run: dotnet publish CampinWebApi --no-build -o ./src/CampinWebApi/publish
         
@@ -37,7 +40,3 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
           package: ./src/CampinWebApi/publish
-          
-
-#       - name: Test 🧪
-#         run: dotnet test WebApi --configuration Release --no-build
