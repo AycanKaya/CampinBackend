@@ -1,0 +1,42 @@
+name: Build & Test Campin Backend Project
+
+on:
+  push:
+    branches:
+    - main
+
+env:
+  AZURE_WEBAPP_NAME: continuousDeploymentApp
+#   AZURE_WEBAPP_PACKAGE_PATH: "./publish"
+  DOTNET_VERSION: "6.0.x"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET 📦
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies 📂
+        run: dotnet restore
+
+      - name: Build 🧱
+        run: dotnet build CampinWebApi --no-restore
+        
+      - name: Test 🧪
+        run: dotnet test --no-build
+        
+      - name: Publish
+        run: dotnet publish CampinWebApi --no-build -o ./src/CampinWebApi/publish
+        
+      - name: Deployment
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          package: ./src/CampinWebApi/publish
